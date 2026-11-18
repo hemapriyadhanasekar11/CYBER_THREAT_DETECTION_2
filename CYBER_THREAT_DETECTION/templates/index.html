@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Threat Detection</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#0a0e17;color:#fff;padding:20px}
+.header{text-align:center;margin-bottom:20px}
+.header h1{font-size:28px;color:#00d4ff}
+.controls{display:flex;gap:10px;justify-content:center;margin-bottom:20px;flex-wrap:wrap}
+button{padding:12px 20px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;color:#fff}
+.btn-start{background:#00c853}.btn-stop{background:#ff3d00}.btn-attack{background:#ff9100}.btn-clear{background:#2962ff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px}
+.card{background:#151b2e;padding:20px;border-radius:12px;border:1px solid #222a44}
+.card h3{font-size:13px;color:#888;margin-bottom:8px}
+.card .val{font-size:32px;font-weight:800}
+.green{color:#00e676}.red{color:#ff5252}.orange{color:#ff9100}.blue{color:#00d4ff}.purple{color:#b388ff}
+.status-box{background:#151b2e;padding:20px;border-radius:12px;border:1px solid #222a44;margin-bottom:20px;text-align:center}
+.status-box h2{font-size:26px}
+.packet-box{background:#1a1a2e;padding:20px;border-radius:12px;border:2px solid #00d4ff;margin-bottom:20px;text-align:center}
+.packet-box h2{font-size:28px;color:#00d4ff}
+.events{background:#151b2e;padding:20px;border-radius:12px;border:1px solid #222a44;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:#888;padding:10px;border-bottom:1px solid #222a44}
+td{padding:10px;border-bottom:1px solid #1a2138}
+</style>
+</head>
+<body>
+<div class="header"><h1>🛡️ Cyber Threat Detection System</h1><p>TCP / UDP Beacon Monitoring - Indian Time (IST)</p></div>
+
+<div class="controls">
+<button class="btn-start" onclick="startMonitoring()">▶️ Start Monitoring</button>
+<button class="btn-stop" onclick="stopMonitoring()">⏹️ Stop Monitoring</button>
+<button class="btn-attack" onclick="simulateAttack()">⚠️ Simulate Attack</button>
+<button class="btn-clear" onclick="stopAttack()">✅ Clear Threat</button>
+</div>
+
+<div class="status-box">
+<h2 id="mainStatus">🔴 MONITORING STOPPED</h2>
+<p id="intrusionReason" style="color:#888;margin-top:8px">Waiting for Beacon...</p>
+</div>
+
+<div class="packet-box">
+<h2 id="packetType">📦 PACKET TYPE: No Packet Yet</h2>
+<p id="packetDetail" style="color:#ccc;margin-top:8px">Last Packet: - | TCP: 0 | UDP: 0</p>
+</div>
+
+<div class="grid">
+<div class="card"><h3>Beacon Status</h3><div class="val" id="beaconStatus">NOT DETECTED</div><p id="lastSeen" style="color:#888;margin-top:8px">Last Seen: Never</p></div>
+<div class="card"><h3>Total Packets</h3><div class="val green" id="totalPackets">0</div></div>
+<div class="card"><h3>TCP Packets</h3><div class="val orange" id="tcpCount">0</div></div>
+<div class="card"><h3>UDP Packets</h3><div class="val purple" id="udpCount">0</div></div>
+<div class="card"><h3>Intrusion Status</h3><div class="val" id="intrusionStatus">NOT DETECTED</div></div>
+</div>
+
+<div class="events"><h3>🌐 Live Traffic</h3><table><thead><tr><th>Indian Time (IST)</th><th>Source IP</th><th>Packet Type</th><th>Packet Name</th></tr></thead><tbody id="trafficBody"><tr><td colspan="4" style="text-align:center;color:#888">No traffic yet</td></tr></tbody></table></div>
+
+<div class="events"><h3>📋 Live Events</h3><table><thead><tr><th>Indian Time (IST)</th><th>Source</th><th>ID</th><th>Status</th></tr></thead><tbody id="eventsBody"><tr><td colspan="4" style="text-align:center;color:#888">No events yet</td></tr></tbody></table></div>
+
+<script>
+async function startMonitoring(){ const r = await fetch('/api/start_monitoring',{method:'POST'}); const d = await r.json(); alert(d.message); loadStatus(); }
+async function stopMonitoring(){ const r = await fetch('/api/stop_monitoring',{method:'POST'}); const d = await r.json(); alert(d.message); loadStatus(); }
+async function simulateAttack(){ const r = await fetch('/api/simulate_attack',{method:'POST'}); const d = await r.json(); alert(d.message); loadStatus(); }
+async function stopAttack(){ const r = await fetch('/api/stop_attack',{method:'POST'}); const d = await r.json(); alert(d.message); loadStatus(); }
+
+async function loadStatus(){
+  const r = await fetch('/api/status'); const d = await r.json();
+  document.getElementById('totalPackets').textContent = d.total_packets;
+  document.getElementById('tcpCount').textContent = d.tcp_count;
+  document.getElementById('udpCount').textContent = d.udp_count;
+  document.getElementById('lastSeen').textContent = 'Last Seen: ' + d.last_seen;
+
+  const bEl = document.getElementById('beaconStatus');
+  if(d.detected){ bEl.textContent = 'DETECTED'; bEl.style.color = '#00e676'; }
+  else { bEl.textContent = 'NOT DETECTED'; bEl.style.color = '#ff5252'; }
+
+  const ms = document.getElementById('mainStatus');
+  if(d.intrusion_detected){ ms.textContent = '🔴 INTRUSION DETECTED'; ms.style.color = '#ff5252'; }
+  else if(d.detected){ ms.textContent = '🟢 BEACON DETECTED - ' + d.last_packet_type + ' PACKET'; ms.style.color = '#00e676'; }
+  else if(d.monitoring){ ms.textContent = '🟢 MONITORING STARTED - WAITING FOR BEACON'; ms.style.color = '#00e676'; }
+  else { ms.textContent = '🔴 MONITORING STOPPED'; ms.style.color = '#ff5252'; }
+
+  document.getElementById('intrusionReason').textContent = d.intrusion_reason;
+
+  const isEl = document.getElementById('intrusionStatus');
+  if(d.intrusion_detected){ isEl.style.color = '#ff5252'; isEl.textContent = 'DETECTED'; }
+  else { isEl.style.color = '#00e676'; isEl.textContent = 'NOT DETECTED'; }
+
+  document.getElementById('packetType').textContent = '📦 PACKET TYPE: ' + d.last_packet_type;
+  document.getElementById('packetDetail').textContent = 'Last Packet: ' + d.last_seen + ' | TCP: ' + d.tcp_count + ' | UDP: ' + d.udp_count;
+
+  const tb = document.getElementById('trafficBody');
+  if(d.traffic && d.traffic.length){ tb.innerHTML = d.traffic.map(t => `<tr><td>${t.time}</td><td>${t.src}</td><td><b>${t.proto}</b></td><td>${t.packet_name}</td></tr>`).join(''); }
+
+  const tbody = document.getElementById('eventsBody');
+  if(d.events && d.events.length){ tbody.innerHTML = d.events.map(e => `<tr><td>${e.time}</td><td>${e.source_name}</td><td>${e.source_id}</td><td>${e.status}</td></tr>`).join(''); }
+}
+setInterval(loadStatus, 1000);
+loadStatus();
+</script>
+</body>
+</html>
